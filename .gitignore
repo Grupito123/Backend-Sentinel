@@ -1,0 +1,16 @@
+node_modules/
+*.log
+
+# Credenciales de Google / Firebase: nunca commitear
+*service-account*.json
+*serviceAccount*.json
+gcp-service-key*.json
+*-sa.json
+application_default_credentials.json
+.secrets/
+.env
+.env.local
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.DS_Store

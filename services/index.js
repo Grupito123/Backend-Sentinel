@@ -1,0 +1,17 @@
+export * from './helpers';
+export * as users from './users';
+export * as students from './students';
+export * as padres from './padres';
+export * as courses from './courses';
+export * as subjects from './subjects';
+export * as enrollments from './enrollments';
+export * as schedules from './schedules';
+export * as attendance from './attendance';
+export * as qrSessions from './qrSessions';
+export * as justifications from './justifications';
+export * as notifications from './notifications';
+export * as audit from './audit';
+export * as grades from './grades';
+export * as exams from './exams';
+export * as assignments from './assignments';
+export * as news from './news';

@@ -1,0 +1,13 @@
+{
+  "name": "sentinela-seed",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Puebla Firestore (proyecto centinela-2b390) con los datos demo de Sentinel",
+  "scripts": {
+    "seed": "node seed.js",
+    "seed:dry": "node seed.js --dry-run"
+  },
+  "dependencies": {
+    "firebase-admin": "^14.5.0"
+  }
+}
