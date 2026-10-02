@@ -3,9 +3,17 @@
 const path = require('path');
 const fs = require('fs');
 
-const firebaseConfig = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '..', 'src', 'firebase.config.json'), 'utf8')
-);
+// El config puede vivir en la raíz de esta carpeta (backend central) o en
+// src/ (cuando el script corre desde el repo de la app).
+const CONFIG_PATHS = [
+  path.join(__dirname, '..', 'firebase.config.json'),
+  path.join(__dirname, '..', 'src', 'firebase.config.json'),
+];
+const configPath = CONFIG_PATHS.find((p) => fs.existsSync(p));
+if (!configPath) {
+  throw new Error(`No se encontró firebase.config.json (probé en: ${CONFIG_PATHS.join(' | ')})`);
+}
+const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 
 const PROJECT_ID = firebaseConfig.projectId;
 const CLOUD_FIRESTORE_HOST = 'firestore.googleapis.com';
