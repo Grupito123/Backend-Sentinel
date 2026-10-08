@@ -215,9 +215,15 @@ service cloud.firestore {
     // queda permitido por el `hasOnly` del alta publica, asi que la rama de
     // auto-registro lo bloquea explicitamente con == null (ver mas abajo). Si se
     // sacarera de esta lista, el admin no podria escribirlo al vincular.
+    // Allowlist de alta del perfil. `cursosDeclarados` y `materiasDeclaradas`
+    // son la DECLARACION del docente/preceptor al registrarse: no dan permiso
+    // por si solos (los permisos salen de materias.docenteId y de
+    // cursos.preceptorIds, que solo escribe la administracion). Son una
+    // solicitud que el admin confirma despues.
     function camposPerfil() {
       return ['uid', 'nombre', 'apellido', 'email', 'dni', 'rol', 'telefono',
               'activo', 'alumnoId', 'dniVinculado', 'hijoAlumnoId',
+              'cursosDeclarados', 'materiasDeclaradas',
               'fechaCreacion', 'updatedAt'];
     }
 
@@ -235,10 +241,15 @@ service cloud.firestore {
     match /usuarios/{usuarioId} {
       allow read: if (autenticado() && request.auth.uid == usuarioId) || esAdmin();
 
-      // Alta publica: el usuario elige su rol, pero SOLO entre los tres roles
-      // publicos del formulario (alumno, padre, profesor/docente). Los roles
-      // preceptor, directivo y administrador NO se pueden auto-asignar: los crea
+      // Alta publica: el usuario elige su rol, pero SOLO entre los cuatro roles
+      // publicos del formulario (alumno, padre, profesor/docente y preceptor).
+      // Los roles directivo y administrador NO se pueden auto-asignar: los crea
       // un admin. Cualquier otro valor de `rol` hace fallar la condicion.
+      //
+      // ACTUALIZACION 07/10/2026 (autorizada por Carlos): se agrego 'preceptor'
+      // a la lista. Un preceptor auto-registrado sin curso asignado NO ve nada:
+      // el acceso a cursos exige estar en datosCurso(cursoId).preceptorIds, que
+      // solo asigna un admin. El rol solo, por si mismo, no abre datos.
       //
       // Esto es la frontera de la clasificacion de cuentas: `rol` es la
       // identidad y NO se deriva de nada. Un rol desconocido no coincide con
@@ -257,7 +268,7 @@ service cloud.firestore {
       allow create: if (autenticado()
                         && request.auth.uid == usuarioId
                         && request.resource.data.uid == request.auth.uid
-                        && request.resource.data.rol in ['alumno', 'padre', 'profesor']
+                        && request.resource.data.rol in ['alumno', 'padre', 'profesor', 'preceptor']
                         && request.resource.data.activo == true
                         && !existeAlumno()
                         && !existePadre()
@@ -309,13 +320,20 @@ service cloud.firestore {
         || esDocenteDelCurso(resource.data.cursoId)
         || esMiAlumno(alumnoId);
       // Alta publica (Opcion B): el alumno crea su propia ficha en `alumnos/{uid}`,
-      // con `usuarioId == uid`, `cursoId == null`, `legajo == ""` y solo campos
-      // minimos permitidos. No puede elegir curso, legajo ni usuarioId distinto.
+      // con `usuarioId == uid`, `legajo == ""` y solo campos minimos permitidos.
+      // ACTUALIZACION 07/10/2026 (autorizada por Carlos): puede informar el curso
+      // que va a cursar, pero SOLO si el curso existe en `cursos/{cursoId}`
+      // (chequeo exists()): la base queda saneada (no existen ids inventados) y
+      // el alumno nuevo ya puede escanear el QR sin esperar al administrador.
+      // `cursoId == null` sigue permitido: es el alta de la web, donde el curso
+      // lo asigna la institucion despues. No puede elegir legajo ni usuarioId.
       // Admin/directivo mantienen sus permisos para crear/vincular fichas.
       allow create: if (autenticado()
                         && request.auth.uid == alumnoId
                         && request.resource.data.usuarioId == request.auth.uid
-                        && request.resource.data.cursoId == null
+                        && (request.resource.data.cursoId == null
+                            || (request.resource.data.cursoId is string
+                                && exists(/databases/$(database)/documents/cursos/$(request.resource.data.cursoId))))
                         && request.resource.data.legajo == ""
                         && request.resource.data.activo == true
                         && request.resource.data.keys().hasOnly(['nombre', 'apellido', 'dni', 'legajo', 'email', 'telefono', 'cursoId', 'activo', 'usuarioId', 'creadoEn', 'actualizadoEn']))

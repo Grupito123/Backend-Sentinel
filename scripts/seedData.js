@@ -14,33 +14,36 @@ const APELLIDOS = [
   'Ortiz', 'Rojas', 'Silva', 'Vega', 'Mansilla', 'Quiroga',
 ];
 
-const anios = [3, 4, 5];
-const divisiones = ['A', 'B'];
+// año → cantidad de divisiones (secundaria técnica):
+//   ciclo básico 1°-3°: 5 divisiones por año · 4°: 4 · 5°: 3 · 6°: 2 · 7°: 2
+//   → 26 cursos, con id "4°2" (mismo formato que horarios/QR/registro)
+const DIVISIONES_POR_ANIO = { 1: 5, 2: 5, 3: 5, 4: 4, 5: 3, 6: 2, 7: 2 };
 const turnos = ['mañana', 'tarde'];
-const orientaciones = ['Informática', 'Electromecánica', 'Construcciones', 'Agropecuaria'];
 
 const pad = (n, largo = 3) => String(n).padStart(largo, '0');
 
 const construirCursos = () => {
   const cursos = [];
 
-  anios.forEach((anio, iAnio) => {
-    divisiones.forEach((division, iDiv) => {
-      const id = `${anio}${division}`;
+  Object.entries(DIVISIONES_POR_ANIO).forEach(([anio, cantidad], iAnio) => {
+    for (let division = 1; division <= cantidad; division += 1) {
+      const id = `${anio}°${division}`;
       cursos.push({
         id,
         nombre: `${anio}° ${division}`,
-        anio,
-        division,
-        turno: turnos[(iAnio + iDiv) % turnos.length],
-        orientacion: orientaciones[iAnio % orientaciones.length],
+        anio: Number(anio),
+        division: String(division),
+        turno: turnos[(iAnio + division) % turnos.length],
+        // ciclo básico sin orientación; en el superior la división 2 es
+        // Informática y el resto Electromecánica (igual que malla.especialidadDe)
+        orientacion: Number(anio) <= 3 ? '' : division === 2 ? 'Informática' : 'Electromecánica',
         activo: true,
         anioLectivo: 2026,
         preceptorIds: [],
         docenteIds: [],
         materiaIds: [],
       });
-    });
+    }
   });
 
   return cursos;
@@ -134,12 +137,12 @@ const construirUsuarios = () => [
 ];
 
 const PRECEPTORES_POR_CURSO = {
-  '3A': ['usr_preceptor_3a'],
-  '3B': ['usr_preceptor_3a'],
-  '4A': ['usr_preceptor_4a'],
-  '4B': ['usr_preceptor_4a'],
-  '5A': ['usr_preceptor_4a'],
-  '5B': ['usr_preceptor_4a'],
+  '3°1': ['usr_preceptor_3a'],
+  '3°2': ['usr_preceptor_3a'],
+  '4°1': ['usr_preceptor_4a'],
+  '4°2': ['usr_preceptor_4a'],
+  '5°1': ['usr_preceptor_4a'],
+  '5°2': ['usr_preceptor_4a'],
 };
 
 const MATERIAS_BASE = [
@@ -246,6 +249,7 @@ module.exports = {
   construirAlumnos,
   construirInscripciones,
   construirHorarios,
+  DIVISIONES_POR_ANIO,
   PRECEPTORES_POR_CURSO,
   MATERIAS_BASE,
   ANIO_LECTIVO: 2026,

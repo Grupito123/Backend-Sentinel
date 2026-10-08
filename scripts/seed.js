@@ -73,7 +73,7 @@ const fechaClave = (fecha) => {
 const ts = (fecha) => Timestamp.fromDate(fecha);
 const inicioDelDia = (fecha) => new Date(fecha.getFullYear(), fecha.getMonth(), fecha.getDate());
 
-const MATERIA_PROG_3A = 'mat_3a_prog';
+const MATERIA_PROG_31 = 'mat_3°1_prog';
 
 const escribirLote = async (db, etiqueta, documentos) => {
   if (!documentos.length) {
@@ -168,14 +168,14 @@ const construirSeed = () => {
     {
       ruta: `${COL.SESIONES_QR}/ses_qr_hoy`,
       datos: {
-        cursoId: '3A',
-        materiaId: MATERIA_PROG_3A,
+        cursoId: '3°1',
+        materiaId: MATERIA_PROG_31,
         creadoPor: 'usr_preceptor_3a',
         fecha: ts(hoy),
         fechaKey: claveHoy,
         horaInicio: ts(inicioSesion),
         horaFin: ts(finSesion),
-        codigo: 'SENTINELA3A',
+        codigo: 'SENTINELA31',
         activo: true,
         ubicacion: { aula: 'Laboratorio 2', lat: -34.6037, lng: -58.3816, radio: 120 },
         creadoEn: FieldValue.serverTimestamp(),
@@ -226,10 +226,10 @@ const construirSeed = () => {
 
   const examenes = [
     {
-      ruta: `${COL.EXAMENES}/ex_prog_3a`,
+      ruta: `${COL.EXAMENES}/ex_prog_31`,
       datos: {
-        materiaId: MATERIA_PROG_3A,
-        cursoId: '3A',
+        materiaId: MATERIA_PROG_31,
+        cursoId: '3°1',
         profesorId: 'usr_profesor_prog',
         titulo: 'Primer parcial de Programación',
         descripcion: 'Unidades 1 y 2',
@@ -251,10 +251,10 @@ const construirSeed = () => {
 
   const trabajos = [
     {
-      ruta: `${COL.TRABAJOS}/tp_prog_3a`,
+      ruta: `${COL.TRABAJOS}/tp_prog_31`,
       datos: {
-        materiaId: MATERIA_PROG_3A,
-        cursoId: '3A',
+        materiaId: MATERIA_PROG_31,
+        cursoId: '3°1',
         profesorId: 'usr_profesor_prog',
         titulo: 'TP 2 - Estructuras de control',
         descripcion: 'Consola interactiva en JavaScript',
@@ -270,9 +270,9 @@ const construirSeed = () => {
   ];
 
   const entregas = alumnos.slice(0, 8).map((alumno, i) => ({
-    ruta: `${COL.ENTREGAS}/tp_prog_3a_${alumno.id}`,
+    ruta: `${COL.ENTREGAS}/tp_prog_31_${alumno.id}`,
     datos: {
-      tpId: 'tp_prog_3a',
+      tpId: 'tp_prog_31',
       alumnoId: alumno.id,
       fechaEntrega: ts(hoy),
       estado: i < 6 ? 'corregido' : 'pendiente',
