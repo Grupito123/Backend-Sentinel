@@ -14,8 +14,12 @@
 // Por defecto es DRY-RUN: solo imprime el plan. Con --apply escribe.
 // Con --overwrite permite pisar una materia que ya tiene otro docente
 // (sin eso, las materias tomadas quedan marcadas como CONFLICTO y se saltean).
+// Con --crear-materias crea las materias que el docente declara y todavia no
+// existen en la base (el registro de la app ofrece las materias REALES de la
+// malla, asi que puede declarar "Bases de Datos" en 4°2 y la base aun no la
+// tenga): se crean con el mismo convenio mat_<curso>_<codigo>.
 //
-// Uso: node confirmar-asignaciones.js --credential <ruta al JSON> [--apply] [--overwrite]
+// Uso: node confirmar-asignaciones.js --credential <ruta al JSON> [--apply] [--overwrite] [--crear-materias]
 
 const { applicationDefault, initializeApp } = require('firebase-admin/app');
 const { getAuth } = require('firebase-admin/auth');
@@ -27,6 +31,7 @@ const credIdx = args.indexOf('--credential');
 const credPath = credIdx >= 0 ? args[credIdx + 1] : process.env.GOOGLE_APPLICATION_CREDENTIALS;
 const APPLY = has('--apply');
 const OVERWRITE = has('--overwrite');
+const CREAR_MATERIAS = has('--crear-materias');
 
 if (!credPath) {
   console.error('Falta la credencial: node confirmar-asignaciones.js --credential <ruta al JSON>');
@@ -39,6 +44,44 @@ const auth = getAuth();
 const db = getFirestore();
 
 const idMateria = (cursoId, codigo) => `mat_${cursoId}_${codigo}`.toLowerCase();
+
+// Nombre de cada materia de la malla segun su codigo de declaracion (espejo
+// de CODIGOS_POR_MATERIA en src/utils/colegio.js de la app). Se usa solo con
+// --crear-materias, para darle nombre a la materia que se esta creando.
+const NOMBRE_POR_CODIGO = {
+  PROG: 'Programación',
+  MATE: 'Matemática',
+  LENG: 'Lengua y Literatura',
+  FIS: 'Física',
+  QUIM: 'Química',
+  HIST: 'Historia',
+  GEOG: 'Geografía',
+  CNAT: 'Ciencias Naturales',
+  INGLES: 'Inglés',
+  EDFIS: 'Educación Física',
+  ARTES: 'Artes',
+  BDATOS: 'Bases de Datos',
+  SISOPS: 'Sistemas Operativos',
+  REDESC: 'Redes de Computadoras',
+  REDSEG: 'Redes y Seguridad',
+  REDES: 'Redes',
+  INGSOF: 'Ingeniería de Software',
+  ADMIBD: 'Administración de BD',
+  EMPREN: 'Emprendimiento Productivo',
+  MODSIS: 'Modelos y Sistemas',
+  MECGEN: 'Mecánica General',
+  DIBTEC: 'Dibujo Técnico',
+  ELECTR: 'Electricidad y Electrónica',
+  MAQEL: 'Máquinas Eléctricas',
+  TERMOD: 'Termodinámica',
+  ELECAPP: 'Electrónica Aplicada',
+  PROCMAN: 'Procesos de Manufactura',
+  IMCR: 'IMCR',
+  PROYFIN: 'Proyecto Final',
+  PP: 'PP',
+  PDISC: 'Pdisc',
+  EVALPROY: 'Evaluación de Proyecto',
+};
 
 (async () => {
   const snapshot = await db.collection('usuarios').get();
@@ -81,7 +124,33 @@ const idMateria = (cursoId, codigo) => `mat_${cursoId}_${codigo}`.toLowerCase();
           const materiaRef = db.doc(`materias/${idMateria(cursoId, codigo)}`);
           const materiaSnap = await materiaRef.get();
           if (!materiaSnap.exists) {
-            console.log(`    [!!] materia inexistente: ${idMateria(cursoId, codigo)} (se omite)`);
+            const nombre =
+              NOMBRE_POR_CODIGO[String(codigo).toUpperCase()] || String(codigo);
+            if (!CREAR_MATERIAS) {
+              console.log(
+                `    [!!] materia inexistente: ${idMateria(cursoId, codigo)} ("${nombre}") — repetir con --crear-materias para crearla (se omite)`
+              );
+              continue;
+            }
+            writes.push({
+              descripcion: `materias/${idMateria(cursoId, codigo)} ← se crea "${nombre}" con docente ${uid}`,
+              ref: materiaRef,
+              data: {
+                nombre,
+                codigo: `${String(codigo).toUpperCase()}-${cursoId}`,
+                cursoId,
+                docenteId: uid,
+                activo: true,
+                orden: 99,
+                creadoEn: FieldValue.serverTimestamp(),
+                actualizadoEn: FieldValue.serverTimestamp(),
+              },
+            });
+            writes.push({
+              descripcion: `cursos/${cursoId}.materiaIds += ${idMateria(cursoId, codigo)}`,
+              ref: cursoRef,
+              data: { materiaIds: FieldValue.arrayUnion(idMateria(cursoId, codigo)) },
+            });
             continue;
           }
           const actual = materiaSnap.data().docenteId;
